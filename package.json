@@ -1,0 +1,10 @@
+{
+  "name": "merge-async-iterators",
+  "version": "0.0.0",
+  "description": "Merge multiple async iterators",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test"
+  },
+  "repository": "laggingreflex/merge-async-iterators"
+}
