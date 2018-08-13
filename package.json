@@ -1,6 +1,6 @@
 {
   "name": "merge-async-iterators",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Merge multiple async iterators",
   "main": "index.js",
   "scripts": {
