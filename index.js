@@ -27,5 +27,7 @@ module.exports = async function* merge(iterators, opts = {}) {
   } catch (error) {
     iterators.forEach(i => i.throw(error));
     throw error;
+  } finally {
+    iterators.forEach(i => i.return());
   }
 };
