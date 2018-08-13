@@ -12,18 +12,20 @@ module.exports = async function* merge(iterators, opts = {}) {
     }
   }).filter(Boolean);
 
-  while (true) {
-    const outstanding = getOutstanding();
-    if (!outstanding.length) break;
-    const { iterator, data } = await Promise.race(outstanding);
-    queue.set(iterator, null);
-    if (data.done) {
-      queue.delete(iterator);
+  try {
+    while (true) {
+      const outstanding = getOutstanding();
+      if (!outstanding.length) break;
+      const { iterator, data } = await Promise.race(outstanding);
+      queue.set(iterator, null);
+      if (data.done) {
+        queue.delete(iterator);
+      }
+      const value = opts.yieldIterator ? { iterator, data } : data.value;
+      yield value
     }
-    if (opts.yieldIterator) {
-      yield { iterator, data };
-    } else {
-      yield data.value
-    }
+  } catch (error) {
+    iterators.forEach(i => i.throw(error));
+    throw error;
   }
 };

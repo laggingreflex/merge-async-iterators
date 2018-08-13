@@ -2,13 +2,14 @@ const merge = require('.')
 // const merge = require('mergeiterator')
 
 const delay = (v, t =
-  // Math.random() *
-  1000
-) =>
-  v
-// new Promise(_ => setTimeout(() => _(v),t));
+    Math.random()
+    * 100
+  ) =>
+  // v
+  new Promise(_ => setTimeout(() => _(v), t));
 
-main().catch(e => {
+main().then(() => console.log('ok')).catch(e => {
+  // console.log('end');
   process.exitCode = 1
   console.error(e);
 });
@@ -35,7 +36,8 @@ async function main() {
 
 async function* a() {
   // console.log('before a1');
-  yield delay('a1', 100);
+  yield delay('a1', 10);
+  throw new Error('a')
   // console.log('before a2');
   yield delay('a2', 100);
   // console.log('before a3');
