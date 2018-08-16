@@ -33,31 +33,30 @@ npm i merge-async-iterators
 ```js
 const merge = require('merge-async-iterators');
 
-async function* a () {
-  yield 'a1'
-  yield 'a2'
-  return 'a3'
-}
-async function* b () {
-  yield 'b1'
-  yield 'b2'
-  return 'b3'
-}
+const array = [1,2];
+const iterable = (function*(){
+  yield 3
+  yield 4
+})()
+const asyncIterable = (async function*(){
+  yield 5
+  yield 6
+})()
 
-for await (const value of merge([a(), b()])) {
+for await (const value of merge([array, iterable, asyncIterable])) {
   console.log(value)
 }
 ```
 ```
-a1
-b1
-a2
-b2
-a3
-b3
+1
+2          // order isn't guaranteed
+undefined  // finished iterators' returns will yield as well
+3
+4
+undefined
+5          // async wil almost always come after normal ones
+6
 ```
-
-
 
 ## Alternatives
 
