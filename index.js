@@ -1,33 +1,77 @@
-module.exports = async function* merge(iterators, opts = {}) {
-  const queue = new Map(iterators.map(i => [i]));
-  const getOutstanding = () => Array.from(queue.keys()).map(iterator => {
-    const existing = queue.get(iterator);
-    if (existing) {
-      return existing;
-    } else {
-      const data = iterator.next();
-      const promise = data.then ? data.then(data => ({ iterator, data })) : Promise.resolve({ iterator, data });
-      queue.set(iterator, promise);
-      return promise;
-    }
-  }).filter(Boolean);
+module.exports = (iterators, opts = {}) => {
 
-  try {
-    while (true) {
-      const outstanding = getOutstanding();
-      if (!outstanding.length) break;
-      const { iterator, data } = await Promise.race(outstanding);
-      queue.set(iterator, null);
-      if (data.done) {
+  let done = false;
+
+  let interrupt;
+  const interruptPromise = new Promise((resolve, reject) => {
+    interrupt = error => error ? reject(error) : resolve();
+  });
+
+  const throwAll = error => iterators.forEach(i => i.throw(error));
+  const returnAll = () => iterators.forEach(i => i.return());
+
+  const merged = {};
+
+  const queue = new Map(iterators.map(i => [i, new Set]));
+
+  const race = () => Promise.race([interruptPromise, ...Array.from(queue).map(([, [pending]]) => pending).filter(Boolean)]);
+
+  const updateQueue = (input) => iterators.forEach(iterator => {
+    const q = queue.get(iterator);
+    if (q && !q.size) {
+      const promise = iterator.next(input).then(({ value, done: iDone }) => {
+        q.delete(promise);
+        if (iDone) {
+          queue.delete(iterator);
+        }
+        return { iterator, value };
+      }).catch(error => {
+        q.delete(promise);
         queue.delete(iterator);
-      }
-      const value = opts.yieldIterator ? { iterator, data } : data.value;
-      yield value
+        merged.throw(error);
+        throwAll(error);
+        throw error;
+      });
+      q.add(promise);
     }
-  } catch (error) {
-    iterators.forEach(i => i.throw(error));
-    throw error;
-  } finally {
-    iterators.forEach(i => i.return());
-  }
+  });
+
+  const getValue = ({ iterator, value } = {}) => opts.yieldIterator ? { value: { iterator, value }, done } : { value, done };
+
+  merged.next = async (input) => {
+    updateQueue(input);
+    try {
+      const result = await race();
+      if (result) {
+        return getValue(result);
+      } else {
+        done = true;
+        returnAll();
+        return getValue();
+      }
+    } catch (error) {
+      done = true;
+      throwAll(error);
+      throw error;
+    }
+  };
+
+  merged.throw = error => {
+    /* TODO: don't set done=true unconditionally here, check to see how other iterators handle the throw */
+    done = true;
+    throwAll(error);
+    interrupt(error);
+    return getValue();
+  };
+
+  merged.return = (value) => {
+    done = true;
+    returnAll();
+    interrupt();
+    return getValue({ value });
+  };
+
+  merged[Symbol.asyncIterator] = () => merged;
+
+  return merged;
 };

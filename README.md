@@ -22,11 +22,9 @@ npm i merge-async-iterators
 
 * **`opts`**
 
-  * **`yieldIterator[=false]`** Yields `{iterator, data: {value, done}}` (instead of just `value`)
+  * **`yieldIterator[=false]`** Yields `{iterator, value}` (instead of `value`)
 
     Useful if you wanna know which iterator yielded the value
-
-
 
 * **Returns** A single merged async iterable
 
