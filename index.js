@@ -4,6 +4,7 @@ module.exports = (iterators, opts = {}) => {
     if (!iterator.next) {
       org.set(iterators[i] = iterator[Symbol.iterator](), iterator);
     }
+    return org;
   }, new Map);
 
   let done = false;
