@@ -10,11 +10,11 @@ module.exports = (iterators, opts = {}) => {
   let done = false;
 
   let interrupt, interruptPromise = new Promise((resolve, reject) => {
-    interrupt = error => error ? reject(error) : resolve();
+    interrupt = ({ error, value }) => error ? reject(error) : resolve(value);
   });
 
   const throwAll = error => iterators.forEach(i => i.throw && i.throw(error));
-  const returnAll = () => iterators.forEach(i => i.return && i.return());
+  const returnAll = value => iterators.forEach(i => i.return && i.return(value));
 
   const merged = {};
 
@@ -73,18 +73,18 @@ module.exports = (iterators, opts = {}) => {
 
   merged.throw = error => {
     /* TODO: don't set done=true unconditionally here, check to see how other iterators handle the throw */
-    if (done) return getValue();
+    if (done) return { done }
     done = true;
     throwAll(error);
-    interrupt(error);
+    interrupt({ error });
     return getValue();
   };
 
   merged.return = (value) => {
-    if (done) return getValue();
+    if (done) return { done }
     done = true;
-    returnAll();
-    interrupt();
+    returnAll(value);
+    interrupt({ value });
     return getValue({ value });
   };
 
